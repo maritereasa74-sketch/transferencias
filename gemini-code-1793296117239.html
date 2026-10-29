@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copiador de Datos de Cuenta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .toast {
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50 pointer-events-none">
+    <i class="fa-solid fa-circle-check text-lg"></i>
+    <span id="toast-msg" class="font-medium">Copiado al portapapeles</span>
+  </div>
+
+  <div class="max-w-3xl w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col justify-center">
+    
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center justify-center gap-2">
+        <i class="fa-solid fa-file-invoice-dollar text-brand-500"></i>
+        <span>Datos de Cuenta y Transferencia</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">Pega el texto con los datos de la cuenta para extraerlos y copiarlos rápido</p>
+    </header>
+
+    <main class="space-y-6">
+      <!-- Input Area -->
+      <section class="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60 shadow-xl backdrop-blur-sm">
+        <label for="raw-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Texto original de la cuenta:
+        </label>
+        <textarea 
+          id="raw-input" 
+          rows="4" 
+          placeholder="Ejemplo: Nombre: Juan Pérez&#10;RUT: 12.345.678-9&#10;Banco: Banco Estado&#10;Cuenta Vista: 12345678&#10;Correo: juan@email.com"
+          class="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-3 text-slate-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition resize-none placeholder-slate-600"
+        ></textarea>
+
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button 
+            id="btn-process" 
+            onclick="processText()" 
+            class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-2.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Extraer Datos
+          </button>
+          <button 
+            onclick="pasteAndProcess()" 
+            class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 active:scale-95"
+            title="Pegar automáticamente desde el portapapeles"
+          >
+            <i class="fa-solid fa-paste"></i> Pegar
+          </button>
+          <button 
+            onclick="clearAll()" 
+            class="bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 border border-slate-700 py-2.5 px-3 rounded-xl transition active:scale-95"
+            title="Limpiar campos"
+          >
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Extracted Fields -->
+      <section class="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60 shadow-xl space-y-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-700 pb-2">
+          Datos Detectados
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Nombre -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nombre / Titular</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-name" placeholder="Ej. Juan Pérez" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-name', 'Nombre')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar nombre">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- RUT / DNI -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">RUT / DNI / Identificación</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-rut" placeholder="Ej. 12.345.678-9" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-rut', 'RUT/DNI')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar RUT/DNI">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Banco -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Banco</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-bank" placeholder="Ej. Banco Estado" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-bank', 'Banco')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar banco">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tipo de Cuenta -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Tipo de Cuenta</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-type" placeholder="Ej. Cuenta Vista / RUT" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-type', 'Tipo de Cuenta')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar tipo de cuenta">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Número de Cuenta -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Número de Cuenta</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-number" placeholder="Ej. 12345678" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-number', 'N° de Cuenta')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar número de cuenta">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Correo / Email -->
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Correo Electrónico</label>
+            <div class="flex gap-2">
+              <input type="text" id="field-email" placeholder="Ej. correo@ejemplo.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-brand-500">
+              <button onclick="copyField('field-email', 'Correo')" class="bg-slate-700 hover:bg-brand-600 text-slate-200 px-3 py-2 rounded-lg transition active:scale-95" title="Copiar correo">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Botón General para Copiar Todo -->
+        <div class="pt-2">
+          <button 
+            onclick="copyAllFormatted()" 
+            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <i class="fa-solid fa-copy"></i> Copiar Todos los Datos Resumidos
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function processText() {
+      const text = document.getElementById('raw-input').value;
+
+      document.getElementById('field-name').value = '';
+      document.getElementById('field-rut').value = '';
+      document.getElementById('field-bank').value = '';
+      document.getElementById('field-type').value = '';
+      document.getElementById('field-number').value = '';
+      document.getElementById('field-email').value = '';
+
+      if (!text.trim()) return;
+
+      const lines = text.split('\n');
+
+      const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i;
+      const rutRegex = /([0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1})/i;
+      const bankKeywords = ['banco', 'santander', 'chile', 'estado', 'bci', 'falabella', 'scotiabank', 'itaú', 'itau', 'security', 'bice', 'coopeuch', 'mach', 'tenpo', 'mercadopago'];
+      const accountTypeKeywords = ['corriente', 'vista', 'ahorro', 'rut', 'chequera', 'cuenta vista', 'cuenta corriente', 'cuenta rut'];
+
+      const emailMatch = text.match(emailRegex);
+      if (emailMatch) document.getElementById('field-email').value = emailMatch[0].trim();
+
+      const rutMatch = text.match(rutRegex);
+      if (rutMatch) document.getElementById('field-rut').value = rutMatch[0].trim();
+
+      lines.forEach(line => {
+        const cleanLine = line.trim();
+        const lowerLine = cleanLine.toLowerCase();
+
+        if (lowerLine.includes('nombre') || lowerLine.includes('titular') || lowerLine.includes('destinatario')) {
+          const val = cleanLine.split(/[:\-]/).slice(1).join(':').trim();
+          if (val) document.getElementById('field-name').value = val;
+        }
+
+        if (lowerLine.includes('banco') || bankKeywords.some(b => lowerLine.includes(b))) {
+          if (lowerLine.includes('banco') || lowerLine.includes('institución')) {
+            const val = cleanLine.split(/[:\-]/).slice(1).join(':').trim();
+            if (val) document.getElementById('field-bank').value = val;
+          } else if (!document.getElementById('field-bank').value) {
+            document.getElementById('field-bank').value = cleanLine;
+          }
+        }
+
+        if (accountTypeKeywords.some(t => lowerLine.includes(t)) && !lowerLine.includes('número') && !lowerLine.includes('n°')) {
+          if (lowerLine.includes('tipo')) {
+            const val = cleanLine.split(/[:\-]/).slice(1).join(':').trim();
+            if (val) document.getElementById('field-type').value = val;
+          } else if (!document.getElementById('field-type').value) {
+            document.getElementById('field-type').value = cleanLine;
+          }
+        }
+
+        if (lowerLine.includes('cuenta') || lowerLine.includes('n°') || lowerLine.includes('num') || lowerLine.includes('numero')) {
+          const numMatch = cleanLine.match(/([0-9]{4,20})/);
+          if (numMatch && !document.getElementById('field-number').value) {
+            document.getElementById('field-number').value = numMatch[0];
+          }
+        }
+      });
+
+      if (!document.getElementById('field-name').value) {
+        for (let line of lines) {
+          const clean = line.trim();
+          if (clean && !clean.includes('@') && !clean.match(rutRegex) && !bankKeywords.some(b => clean.toLowerCase().includes(b)) && !clean.match(/[0-9]{5,}/)) {
+            document.getElementById('field-name').value = clean;
+            break;
+          }
+        }
+      }
+
+      showToast('¡Datos extraídos correctamente!');
+    }
+
+    async function pasteAndProcess() {
+      try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('raw-input').value = text;
+        processText();
+      } catch (err) {
+        showToast('No se pudo acceder al portapapeles. Pega el texto manualmente.');
+      }
+    }
+
+    function copyField(elementId, fieldName) {
+      const input = document.getElementById(elementId);
+      if (!input.value.trim()) {
+        showToast(`El campo ${fieldName} está vacío`);
+        return;
+      }
+
+      navigator.clipboard.writeText(input.value.trim());
+      showToast(`${fieldName} copiado`);
+    }
+
+    function copyAllFormatted() {
+      const name = document.getElementById('field-name').value.trim();
+      const rut = document.getElementById('field-rut').value.trim();
+      const bank = document.getElementById('field-bank').value.trim();
+      const type = document.getElementById('field-type').value.trim();
+      const number = document.getElementById('field-number').value.trim();
+      const email = document.getElementById('field-email').value.trim();
+
+      let formatted = '';
+      if (name) formatted += `Nombre: ${name}\n`;
+      if (rut) formatted += `RUT: ${rut}\n`;
+      if (bank) formatted += `Banco: ${bank}\n`;
+      if (type) formatted += `Tipo de cuenta: ${type}\n`;
+      if (number) formatted += `N° de cuenta: ${number}\n`;
+      if (email) formatted += `Correo: ${email}\n`;
+
+      if (!formatted) {
+        showToast('No hay datos para copiar');
+        return;
+      }
+
+      navigator.clipboard.writeText(formatted.trim());
+      showToast('Todos los datos copiados');
+    }
+
+    function clearAll() {
+      document.getElementById('raw-input').value = '';
+      document.getElementById('field-name').value = '';
+      document.getElementById('field-rut').value = '';
+      document.getElementById('field-bank').value = '';
+      document.getElementById('field-type').value = '';
+      document.getElementById('field-number').value = '';
+      document.getElementById('field-email').value = '';
+      showToast('Campos limpios');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toast-msg');
+      msg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
